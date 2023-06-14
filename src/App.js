@@ -293,7 +293,7 @@ const App = () => {
 
   return (
     <Router>
-      <div className='container' style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <div className='container'>
         <div className="App-name">
           <div className='logo'>
             <img src="http://www.ipu.ac.in/style/head_foot_img/220px-usemGuru_Gobind_Singh_Indraprastha_University12.png" alt="logo" />
@@ -302,16 +302,16 @@ const App = () => {
   
           {renderSchools()}
           <div className="navigation">
-          <nav>
-            <Link to="/">Home  |</Link>
-            <Link to="/add-school">  Add School  |</Link>
-            <Link to="/add-schoolHead">  Add School Head  |</Link>
-            <Link to="/add-department">  Add Department  |</Link>
-            <Link to="/add-branch">Add Branch  |</Link>
-            <Link to="/add-branch-head">  Add Branch Head  |</Link>
-            <Link to="/add-student">Add Student  |</Link>
-          </nav>
-        </div>
+            <nav>
+              <Link to="/">Home  |</Link>
+              <Link to="/add-school">  Add School  |</Link>
+              <Link to="/add-schoolHead">  Add School Head  |</Link>
+              <Link to="/add-department">  Add Department  |</Link>
+              <Link to="/add-branch">Add Branch  |</Link>
+              <Link to="/add-branch-head">  Add Branch Head  |</Link>
+              <Link to="/add-student">Add Student  |</Link>
+            </nav>
+          </div>
         </div>
   
         
