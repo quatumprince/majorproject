@@ -1,5 +1,14 @@
+#root{
+  background-color:blanchedalmond;
+}
 .App {
-  text-align: center;
+  /* text-align: center; */
+  display: flex;
+  justify-content: space-between;
+  flex-direction: row-reverse;
+  align-items: center;
+  max-width: 90%;
+  margin: 0 auto;
 }
 
 .App-logo {
@@ -28,6 +37,7 @@
   color: #61dafb;
 }
 
+
 @keyframes App-logo-spin {
   from {
     transform: rotate(0deg);
@@ -35,4 +45,44 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+
+/* My code */
+
+nav{
+  display: flex;
+  gap: 10px;
+  text-align: center;
+}
+
+.App a{
+  text-decoration: none;
+  color: black;
+}
+
+.App a:hover{
+  color: #61dafb;
+}
+
+.heading-logo{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.heading-logo .logo img{
+  width: 80px;
+  
+}
+
+.bodyOk{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-direction: row-reverse;
+  align-items: center;
+  max-width: 90%;
+  margin: 0 auto;
+
 }
