@@ -12,6 +12,10 @@ const App = () => {
   const [schoolName, setSchoolName] = useState('');
   const [departmentName, setDepartmentName] = useState('');
   const [branchName, setBranchName] = useState('');
+  const [branchHead,setBranchHead] = useState('');
+  const [studentSchoolName, setStudentSchoolName]= useState('');
+  const [studentBranchName, setStudentBranchName]= useState('');
+  const [studentDepartmentName, setStudentdepartmentName]= useState('');
   const [studentId, setStudentId] = useState('');
   const [fileHash, setFileHash] = useState('');
   const [fileSize, setFileSize] = useState('');
@@ -24,21 +28,25 @@ const App = () => {
   useEffect(() => {
     const initWeb3 = async () => {
       if (window.ethereum) {
+        console.log('Using window.ethereum');
         setWeb3(new Web3(window.ethereum));
         try {
           await window.ethereum.enable();
+          console.log('Account access granted');
         } catch (error) {
           console.error('User denied account access');
         }
       } else if (window.web3) {
+        console.log('Using window.web3');
         setWeb3(new Web3(window.web3.currentProvider));
       } else {
         console.error('No Ethereum browser extension detected');
       }
     };
-
+  
     initWeb3();
   }, []);
+  
 
   useEffect(() => {
     const initContract = async () => {
@@ -169,8 +177,10 @@ const App = () => {
       case 'addBranch':
         await contract.methods.addBranch(schoolName, departmentName, branchName).send({ from: accounts[0] });
         break;
+      case 'addBranchHead':
+        await contract.methods.addBranchHead(branchHead).send({from: accounts[0]});
       case 'addStudent':
-        await contract.methods.addStudent(schoolName, departmentName, branchName, studentId).send({ from: accounts[0] });
+        await contract.methods.addStudent(studentSchoolName, studentDepartmentName, studentBranchName, studentId).send({ from: accounts[0] });
         break;
       case 'sendFile':
         await contract.methods
@@ -283,72 +293,144 @@ const App = () => {
 
   return (
     <Router>
-      <div >
-        <nav className="App">
-          <Link to="/">Home</Link>
-          <br></br>
-          <Link to="/add-school">Add School</Link>
-          <br></br>
-          <Link to="/add-schoolHead">Add School Head</Link>
-          <br></br>
-          <Link to="/add-department">Add Department</Link>
-
-        </nav>
-
-        <div className="bodyOk">
-        <Routes>
-          
-          <Route
-            path="/add-school"
-            element={(
-              <Form name="addSchool" onSubmit={handleSubmit}>
-                <Form.Field>
-                  <label>School Name</label>
-                  <Input placeholder="School Name" onChange={(e) => setSchoolName(e.target.value)} />
-                </Form.Field>
-                <Form.Field>
-                  <label>School Address</label>
-                  <Input placeholder="School Address" onChange={(e) => setSchoolAddress(e.target.value)} />
-                </Form.Field>
-                <Button type="submit">Add School</Button>
-              </Form>
-            )}
-          />
-          {/* Add other routes for adding departments, branches, students, etc. */}
-
-          <Route
-            path="/add-department"
-            element={(
-              <Form name="addDepartment" onSubmit={handleSubmit}>
-              <Form.Field>
-                <label>Department Name</label>
-                <Input placeholder="Department Name" onChange={(e) => setDepartmentName(e.target.value)} />
-              </Form.Field>
-              <Button type="submit">Add Department</Button>
-            </Form>
-            )}
-          />
-
-          <Route 
-            path="/add-schoolHead"
-            element={(
-              <Form name="addSchoolHead" onSubmit={handleSubmit}>
-                <Form.Field>
-                  <label>School Head Name</label>
-                  <Input placeholder="School Head Name" onChange={(e) => setSchoolHeadName(e.target.value)} />
-                </Form.Field>
-                <Button type="submit">Add School Head</Button>
-              </Form>
-            )}
-          />
-
-        </Routes>
+      <div className='container' style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <div className="App-name">
+          <div className='logo'>
+            <img src="http://www.ipu.ac.in/style/head_foot_img/220px-usemGuru_Gobind_Singh_Indraprastha_University12.png" alt="logo" />
+            <h1>GGSIPU</h1>
+          </div>
+  
+          {renderSchools()}
+          <div className="navigation">
+          <nav>
+            <Link to="/">Home  |</Link>
+            <Link to="/add-school">  Add School  |</Link>
+            <Link to="/add-schoolHead">  Add School Head  |</Link>
+            <Link to="/add-department">  Add Department  |</Link>
+            <Link to="/add-branch">Add Branch  |</Link>
+            <Link to="/add-branch-head">  Add Branch Head  |</Link>
+            <Link to="/add-student">Add Student  |</Link>
+          </nav>
         </div>
+        </div>
+  
         
-        
+  
+        <div className="content">
+          <Routes>
+            <Route
+              path="/"
+              element={(
+                <div className='heading-logo'>
+                  <h1>GGSIPU FILE MANAGEMENT SYSTEM</h1>
+                  {renderSchools()}
+                </div>
+              )}
+            />
+  
+            <Route
+              path="/add-school"
+              element={(
+                <Form name="addSchool" onSubmit={handleSubmit}>
+                  <Form.Field>
+                    <label>School Name</label>
+                    <Input placeholder="School Name" onChange={(e) => setSchoolName(e.target.value)} />
+                  </Form.Field>
+                  <Form.Field>
+                    <label>School Address</label>
+                    <Input placeholder="School Address" onChange={(e) => setSchoolAddress(e.target.value)} />
+                  </Form.Field>
+                  <Button type="submit">Add School</Button>
+                </Form>
+              )}
+            />
+  
+            {/* Add other routes for adding departments, branches, students, etc. */}
+  
+            <Route
+              path="/add-department"
+              element={(
+                <Form name="addDepartment" onSubmit={handleSubmit}>
+                  <Form.Field>
+                    <label>Department Name</label>
+                    <Input placeholder="Department Name" onChange={(e) => setDepartmentName(e.target.value)} />
+                  </Form.Field>
+                  <Button type="submit">Add Department</Button>
+                </Form>
+              )}
+            />
+  
+            <Route
+              path="/add-schoolHead"
+              element={(
+                <Form name="addSchoolHead" onSubmit={handleSubmit}>
+                  <Form.Field>
+                    <label>School Head Address</label>
+                    <Input placeholder="School Head Address" onChange={(e) => setSchoolHeadName(e.target.value)} />
+                  </Form.Field>
+                  <Button type="submit">Add School Head</Button>
+                </Form>
+              )}
+            />
+
+            <Route
+              path="/add-branch"
+              element={(
+                <Form name="addBranch" onSubmit={handleSubmit}>
+                  <Form.Field>
+                    <label>Branch Name</label>
+                    <Input placeholder="Branch Name" onChange={(e) => setBranchName(e.target.value)} />
+                  </Form.Field>
+                  <Button type="submit">Add Branch</Button>
+                </Form>
+              )}
+            />
+
+            <Route
+              path="/add-branch-head"
+              element={(
+                <Form name="addBranch" onSubmit={handleSubmit}>
+                  <Form.Field>
+                    <label>Branch Head Name</label>
+                    <Input placeholder="Branch Head Address" onChange={(e) => setBranchHead(e.target.value)} />
+                  </Form.Field>
+                  <Button type="submit">Add School Head</Button>
+                </Form>
+              )}
+            />
+
+            <Route
+              path="/add-student"
+              element={(
+                <Form name="addStudent" onSubmit={handleSubmit}>
+                  <Form.Field>
+                    <label>Student Name</label>
+                    <Input placeholder="Student Name" onChange={(e) => setStudentSchoolName(e.target.value)} />
+                  </Form.Field>
+                  <Form.Field>
+                    <label>Department Name</label>
+                    <Input placeholder="Department Name" onChange={(e) => setStudentdepartmentName(e.target.value)} />
+                  </Form.Field>
+                  <Form.Field>
+                    <label>Branch Name</label>
+                    <Input placeholder="Branch Name" onChange={(e) => setStudentBranchName(e.target.value)} />
+                  </Form.Field>
+                  <Form.Field>
+                    <label>Student ID</label>
+                    <Input placeholder="Student ID" onChange={(e) => setStudentId(e.target.value)} />
+                  </Form.Field>
+                  <Button type="submit">Add School Head</Button>
+                </Form>
+              )}
+            />
+
+
+          </Routes>
+        </div>
       </div>
     </Router>
   );
+  
 };
 
 export default App;

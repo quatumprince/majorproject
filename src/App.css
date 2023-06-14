@@ -1,88 +1,75 @@
-#root{
-  background-color:blanchedalmond;
+body {
+  margin: 0;
+  padding: 0;
+  background-image: url(https://www.edufever.com/wp-content/uploads/2017/10/GGSIPU-New-Delhi.jpg);
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-blend-mode: luminosity;
+  backdrop-filter: blur(5px); /* Adjust the blur radius as needed */
 }
-.App {
-  /* text-align: center; */
+
+
+.container {
   display: flex;
-  justify-content: space-between;
-  flex-direction: row-reverse;
+  flex-direction: column;
+  height: 100vh;
+  justify-content: center;
   align-items: center;
-  max-width: 90%;
-  margin: 0 auto;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+.App-name {
+  text-align: center;
+  margin-bottom: 20px;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+.logo img {
+  width: 100px;
+  height: 50px;
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+h1 {
+  font-size: 24px;
+  margin: 10px 0;
+}
+
+.navigation {
+  text-align: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.navigation a {
+  margin-right: 10px;
+}
+
+.content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
 }
 
-.App-link {
-  color: #61dafb;
-}
-
-
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-
-/* My code */
-
-nav{
-  display: flex;
-  gap: 10px;
+.heading-logo {
   text-align: center;
+  margin-bottom: 20px;
 }
 
-.App a{
+.heading-logo .logo img {
+  width: 150px;
+  height: 150px;
+}
+
+.logo h1{
+  font-size: 36px;
+  color: darkblue;
+}
+
+.navigation nav a{
   text-decoration: none;
   color: black;
+  font-size: 24px;
 }
 
-.App a:hover{
-  color: #61dafb;
-}
-
-.heading-logo{
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.heading-logo .logo img{
-  width: 80px;
-  
-}
-
-.bodyOk{
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-direction: row-reverse;
-  align-items: center;
-  max-width: 90%;
-  margin: 0 auto;
-
+.navigation nav a:hover{
+ 
+  color: bisque;
 }
