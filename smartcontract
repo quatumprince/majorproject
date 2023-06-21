@@ -1,0 +1,269 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.7;
+
+// FileStorage contract
+contract FileStorage {
+    // Event
+    event FileUploaded(
+        uint256 fileId,
+        string fileHash,
+        uint256 fileSize,
+        string fileType,
+        string fileName,
+        uint256 uploadTime,
+        address uploader
+    );
+
+    // File Struct
+    struct File {
+        uint256 fileId;
+        string fileHash;
+        uint256 fileSize;
+        string fileType;
+        string fileName;
+        uint256 uploadTime;
+        address uploader;
+    }
+
+    uint256 public fileCount = 0;
+    mapping(address => File[]) public files;
+
+    // Upload File function
+    function uploadFile(
+        string memory _fileHash,
+        uint256 _fileSize,
+        string memory _fileType,
+        string memory _fileName
+    ) public {
+        // Make sure the file hash exists
+        require(bytes(_fileHash).length > 0, "File hash cannot be empty");
+        require(bytes(_fileType).length > 0, "File type cannot be empty");
+        require(bytes(_fileName).length > 0, "File name cannot be empty");
+        require(msg.sender != address(0), "Invalid uploader address");
+        require(_fileSize > 0, "File size must be greater than zero");
+
+        fileCount++;
+
+        files[msg.sender].push(
+            File(
+                fileCount,
+                _fileHash,
+                _fileSize,
+                _fileType,
+                _fileName,
+                block.timestamp,
+                msg.sender
+            )
+        );
+
+        // Trigger an event
+        emit FileUploaded(
+            fileCount,
+            _fileHash,
+            _fileSize,
+            _fileType,
+            _fileName,
+            block.timestamp,
+            msg.sender
+        );
+    }
+
+    function getFileCount(address _uploader) public view returns (uint256) {
+        return files[_uploader].length;
+    }
+
+    function getFileByIndex(address _uploader, uint256 _index) public view returns (File memory) {
+        require(_index < files[_uploader].length, "Invalid index");
+        return files[_uploader][_index];
+    }
+}
+
+// University contract
+contract University {
+    struct Student {
+        string id;
+        address branchHead;
+        bool fileAccepted;
+        string fileContent;
+    }
+
+    struct Branch {
+        mapping(string => Student) students;
+        uint256 studentCount;
+        address schoolHead;
+    }
+
+    struct Department {
+        mapping(string => Branch) branches;
+        uint256 branchCount;
+        address schoolHead;
+    }
+
+    struct School {
+    string schoolName; // Add the schoolName property
+    mapping(string => Department) departments;
+    uint256 departmentCount;
+    address schoolHead;
+}
+
+
+    address public owner;
+    mapping(address => bool) public branchHeads;
+    mapping(address => bool) public schoolHeads;
+    mapping(string => School) public schools;
+    uint256 public schoolsCount; // Track the number of schools
+
+    // IPFS library instance
+    FileStorage public fileStorage;
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only the owner can perform this action");
+        _;
+    }
+
+    modifier onlyBranchHead() {
+        require(branchHeads[msg.sender] == true, "Only branch heads can perform this action");
+        _;
+    }
+
+    modifier onlySchoolHead() {
+        require(schoolHeads[msg.sender] == true, "Only school heads can perform this action");
+        _;
+    }
+
+    constructor(address _fileStorageAddress) {
+        owner = msg.sender;
+        fileStorage = FileStorage(_fileStorageAddress);
+        schoolsCount = 0; // Initialize schoolsCount to 0
+    }
+
+    function addBranchHead(address _branchHead) external onlyOwner {
+        branchHeads[_branchHead] = true;
+    }
+
+    function addSchoolHead(address _schoolHead) external onlyOwner {
+        schoolHeads[_schoolHead] = true;
+    }
+
+    function addSchool(string memory _schoolName, address _schoolHead) external onlyOwner {
+        schools[_schoolName].departmentCount = 0;
+        schools[_schoolName].schoolHead = _schoolHead; // Set the school head
+        schoolHeads[_schoolHead] = true;
+        schoolsCount++; // Increment the number of schools
+    }
+
+    function addDepartment(string memory _schoolName, string memory _departmentName) external onlySchoolHead {
+        schools[_schoolName].departments[_departmentName].branchCount = 0;
+        schools[_schoolName].departments[_departmentName].schoolHead = msg.sender;
+        schools[_schoolName].departmentCount++;
+    }
+
+    function addBranch(string memory _schoolName, string memory _departmentName, string memory _branchName) external onlySchoolHead {
+        schools[_schoolName].departments[_departmentName].branches[_branchName].studentCount = 0;
+        schools[_schoolName].departments[_departmentName].branchCount++;
+        schools[_schoolName].departments[_departmentName].branches[_branchName].schoolHead = schools[_schoolName].departments[_departmentName].schoolHead; // Set the school head for the branch
+    }
+
+    function addStudent(string memory _schoolName, string memory _departmentName, string memory _branchName, string memory _studentId) external onlyBranchHead {
+        schools[_schoolName].departments[_departmentName].branches[_branchName].students[_studentId] = Student(_studentId, msg.sender, false, "");
+        schools[_schoolName].departments[_departmentName].branches[_branchName].studentCount++;
+    }
+
+    function sendFile(
+        string memory _schoolName,
+        string memory _departmentName,
+        string memory _branchName,
+        string memory _studentId,
+        string memory _fileHash,
+        uint256 _fileSize,
+        string memory _fileType,
+        string memory _fileName
+    ) external onlyBranchHead {
+        require(schools[_schoolName].departments[_departmentName].branches[_branchName].students[_studentId].branchHead == msg.sender, "You are not the branch head of this student");
+        require(!schools[_schoolName].departments[_departmentName].branches[_branchName].students[_studentId].fileAccepted, "File already accepted");
+
+        // Store the file on IPFS and get the file hash
+        fileStorage.uploadFile(_fileHash, _fileSize, _fileType, _fileName);
+
+        // Update the file content reference in the smart contract
+        schools[_schoolName].departments[_departmentName].branches[_branchName].students[_studentId].fileContent = _fileHash;
+    }
+
+    function acceptFile(string memory _schoolName, string memory _departmentName, string memory _branchName, string memory _studentId) external onlySchoolHead {
+        schools[_schoolName].departments[_departmentName].branches[_branchName].students[_studentId].fileAccepted = true;
+    }
+
+    function rejectFile(string memory _schoolName, string memory _departmentName, string memory _branchName, string memory _studentId) external onlySchoolHead {
+        schools[_schoolName].departments[_departmentName].branches[_branchName].students[_studentId].fileAccepted = false;
+    }
+
+    function getSchoolsCount() public view returns (uint256) {
+        return schoolsCount;
+    }
+
+    function getSchoolDepartmentCount(string memory _schoolName) public view returns (uint256) {
+        return schools[_schoolName].departmentCount;
+    }
+
+    function getDepartmentBranchCount(string memory _schoolName, string memory _departmentName) public view returns (uint256) {
+        return schools[_schoolName].departments[_departmentName].branchCount;
+    }
+
+    function getBranchStudentCount(string memory _schoolName, string memory _departmentName, string memory _branchName) public view returns (uint256) {
+        return schools[_schoolName].departments[_departmentName].branches[_branchName].studentCount;
+    }
+
+    function getStudentFileContent(string memory _schoolName, string memory _departmentName, string memory _branchName, string memory _studentId) public view returns (string memory) {
+        return schools[_schoolName].departments[_departmentName].branches[_branchName].students[_studentId].fileContent;
+    }
+    
+   function getSchoolByIndex(uint256 _index) public view returns (string memory, address) {
+    require(_index < schoolsCount, "Invalid index");
+    string[] memory schoolNames = getSchoolNames();
+    string memory schoolName = schoolNames[_index];
+    return (schoolName, schools[schoolName].schoolHead);
+}
+// CPMPARE THE VALUE FOR NEXT ITERATION
+function getSchoolNames() public view returns (string[] memory) {
+    string[] memory schoolNames = new string[](schoolsCount);
+    uint256 index = 0;
+    for (uint256 j = 0; j < schoolsCount; j++) {
+        string memory schoolName = getSchoolName(j);
+        if (bytes(schools[schoolName].schoolName).length != 0) {
+            schoolNames[index] = schoolName;
+            index++;
+        }
+    }
+    return schoolNames;
+}
+
+function getSchoolKeys() internal view returns (string[] memory) {
+    string[] memory keys = new string[](schoolsCount);
+    uint256 index = 0;
+    for (uint256 j = 0; j < schoolsCount; j++) {
+        string memory schoolName = getSchoolName(j);
+        if (bytes(schools[schoolName].schoolName).length != 0) {
+            keys[index] = schoolName;
+            index++;
+        }
+    }
+    return keys;
+}
+
+function getSchoolName(uint256 _index) internal view returns (string memory) {
+    uint256 count = 0;
+    string[] memory schoolKeys = getSchoolKeys();
+    for (uint256 i = 0; i < schoolKeys.length; i++) {
+        if (bytes(schoolKeys[i]).length != 0) {
+            if (count == _index) {
+                return schoolKeys[i];
+            }
+            count++;
+        }
+    }
+    revert("Invalid index");
+}
+
+
+
+}
