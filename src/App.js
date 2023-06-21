@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import Web3 from 'web3';
 import { CONTRACT_ADDRESSES, CONTRACT_ABI } from './contract';
 import './App.css';
+import { create } from 'ipfs-http-client';
 
 const App = () => {
   const [web3, setWeb3] = useState(null);
@@ -15,7 +16,7 @@ const App = () => {
   const [branchHead,setBranchHead] = useState('');
   const [studentSchoolName, setStudentSchoolName]= useState('');
   const [studentBranchName, setStudentBranchName]= useState('');
-  const [studentDepartmentName, setStudentdepartmentName]= useState('');
+  const [studentDepartmentName, setStudentDepartmentName]= useState('');
   const [studentId, setStudentId] = useState('');
   const [fileHash, setFileHash] = useState('');
   const [fileSize, setFileSize] = useState('');
@@ -23,7 +24,11 @@ const App = () => {
   const [fileName, setFileName] = useState('');
   const [schools, setSchools] = useState({});
   const [schoolAddress, setSchoolAddress] = useState('');
-  const [schoolHeadName, setSchoolHeadName] = useState('');
+  const [schoolHeadAddress, setSchoolHeadAddress] = useState('');
+  const [file, setFile] = useState('');
+  const [departmentSchoolName, setDepartmentSchoolName]= useState('');
+
+  const ipfs = create({ host: 'localhost', port: '5001', protocol: 'http' });
 
   useEffect(() => {
     const initWeb3 = async () => {
@@ -70,6 +75,7 @@ const App = () => {
     for (let i = 0; i < departmentCount; i++) {
       const departmentName = await contract.methods.getDepartmentByIndex(schoolName, i).call();
       departments[departmentName] = await loadDepartment(contract, schoolName, departmentName);
+
     }
   
     return { departments };
@@ -164,6 +170,7 @@ const App = () => {
     if (!contract) {
       return;
     }
+    const SHA256 = require('crypto-js/sha256');
 
     const accounts = await web3.eth.getAccounts();
 
@@ -171,22 +178,42 @@ const App = () => {
       case 'addSchool':
         await contract.methods.addSchool(schoolName, schoolAddress).send({ from: accounts[0] });
         break;
+      case 'addSchoolHead':
+        await contract.methods.addSchoolHead(schoolHeadAddress).send({ from: accounts[0] });
+        break;
       case 'addDepartment':
-        await contract.methods.addDepartment(schoolName, departmentName).send({ from: accounts[0] });
+        await contract.methods.addDepartment(departmentSchoolName, departmentName).send({ from: accounts[0] });
         break;
       case 'addBranch':
         await contract.methods.addBranch(schoolName, departmentName, branchName).send({ from: accounts[0] });
         break;
       case 'addBranchHead':
         await contract.methods.addBranchHead(branchHead).send({from: accounts[0]});
+        break;
       case 'addStudent':
-        await contract.methods.addStudent(studentSchoolName, studentDepartmentName, studentBranchName, studentId).send({ from: accounts[0] });
+        await contract.methods.addStudent(schoolName, departmentName, branchName, studentId).send({ from: accounts[0] });
         break;
       case 'sendFile':
-        await contract.methods
-          .sendFile(schoolName, departmentName, branchName, studentId, fileHash, fileSize, fileType, fileName)
-          .send({ from: accounts[0] });
-        break;
+        const fileData = new FormData();
+        fileData.append('file', file);
+
+        const { cid } = await ipfs.addAll(fileData);
+        const fileHash = cid.toString();
+
+        // Calculate file hash before calling the smart contract
+        const fileReader = new FileReader();
+        fileReader.onloadend = async () => {
+          const content = Buffer.from(fileReader.result);
+          const fileHash = SHA256(content).toString(); // Calculate SHA-256 hash
+
+          await contract.methods
+            .sendFile(schoolName, departmentName, branchName, studentId, fileHash, file.size, file.type, file.name)
+            .send({ from: accounts[0] });
+        };
+        fileReader.readAsArrayBuffer(file);
+
+      break;
+
       case 'acceptFile':
         await contract.methods.acceptFile(schoolName, departmentName, branchName, studentId).send({ from: accounts[0] });
         break;
@@ -310,6 +337,7 @@ const App = () => {
               <Link to="/add-branch">Add Branch  |</Link>
               <Link to="/add-branch-head">  Add Branch Head  |</Link>
               <Link to="/add-student">Add Student  |</Link>
+              <Link to="/send-file">Send File </Link>
             </nav>
           </div>
         </div>
@@ -352,9 +380,14 @@ const App = () => {
               element={(
                 <Form name="addDepartment" onSubmit={handleSubmit}>
                   <Form.Field>
+                    <label>School Name</label>
+                    <Input placeholder="School Name" onChange={(e) => setDepartmentSchoolName(e.target.value)} />
+                  </Form.Field>
+                  <Form.Field>
                     <label>Department Name</label>
                     <Input placeholder="Department Name" onChange={(e) => setDepartmentName(e.target.value)} />
                   </Form.Field>
+                  
                   <Button type="submit">Add Department</Button>
                 </Form>
               )}
@@ -366,7 +399,7 @@ const App = () => {
                 <Form name="addSchoolHead" onSubmit={handleSubmit}>
                   <Form.Field>
                     <label>School Head Address</label>
-                    <Input placeholder="School Head Address" onChange={(e) => setSchoolHeadName(e.target.value)} />
+                    <Input placeholder="School Head Address" onChange={(e) => setSchoolHeadAddress(e.target.value)} />
                   </Form.Field>
                   <Button type="submit">Add School Head</Button>
                 </Form>
@@ -377,6 +410,14 @@ const App = () => {
               path="/add-branch"
               element={(
                 <Form name="addBranch" onSubmit={handleSubmit}>
+                  <Form.Field>
+                    <label>School Name</label>
+                    <Input placeholder="School Name" onChange={(e) => setSchoolName(e.target.value)} />
+                  </Form.Field>
+                  <Form.Field>
+                    <label>Department Name</label>
+                    <Input placeholder="Department Name" onChange={(e) => setDepartmentName(e.target.value)} />
+                  </Form.Field>
                   <Form.Field>
                     <label>Branch Name</label>
                     <Input placeholder="Branch Name" onChange={(e) => setBranchName(e.target.value)} />
@@ -404,22 +445,51 @@ const App = () => {
               element={(
                 <Form name="addStudent" onSubmit={handleSubmit}>
                   <Form.Field>
-                    <label>Student Name</label>
-                    <Input placeholder="Student Name" onChange={(e) => setStudentSchoolName(e.target.value)} />
+                    <label>School Name</label>
+                    <Input placeholder="School Name" onChange={(e) => setSchoolName(e.target.value)} />
                   </Form.Field>
                   <Form.Field>
                     <label>Department Name</label>
-                    <Input placeholder="Department Name" onChange={(e) => setStudentdepartmentName(e.target.value)} />
+                    <Input placeholder="Department Name" onChange={(e) => setDepartmentName(e.target.value)} />
                   </Form.Field>
                   <Form.Field>
                     <label>Branch Name</label>
-                    <Input placeholder="Branch Name" onChange={(e) => setStudentBranchName(e.target.value)} />
+                    <Input placeholder="Branch Name" onChange={(e) => setBranchName(e.target.value)} />
                   </Form.Field>
                   <Form.Field>
                     <label>Student ID</label>
                     <Input placeholder="Student ID" onChange={(e) => setStudentId(e.target.value)} />
                   </Form.Field>
-                  <Button type="submit">Add School Head</Button>
+                  <Button type="submit">Add Student</Button>
+                </Form>
+              )}
+            />
+
+            <Route
+              path="/send-file"
+              element={(
+                <Form name="sendFile" onSubmit={handleSubmit}>
+                  <Form.Field>
+                    <label>School Name</label>
+                    <Input placeholder="School Name" onChange={(e) => setSchoolName(e.target.value)} />
+                  </Form.Field>
+                  <Form.Field>
+                    <label>Department Name</label>
+                    <Input placeholder="Department Name" onChange={(e) => setDepartmentName(e.target.value)} />
+                  </Form.Field>
+                  <Form.Field>
+                    <label>Branch Name</label>
+                    <Input placeholder="Branch Name" onChange={(e) => setBranchName(e.target.value)} />
+                  </Form.Field>
+                  <Form.Field>
+                    <label>Student ID</label>
+                    <Input placeholder="Student ID" onChange={(e) => setStudentId(e.target.value)} />
+                  </Form.Field>
+                  <Form.Field>
+                    <label>File</label>
+                    <Input type="file" name="fileInput" onChange={(e) => setFile(e.target.files[0])} />
+                  </Form.Field>
+                  <Button type="submit">Send File</Button>
                 </Form>
               )}
             />
